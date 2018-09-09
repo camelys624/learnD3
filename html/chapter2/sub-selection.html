@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>sub-selection</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+<section id="section1">
+    <div>
+        <p>blue box</p>
+    </div>
+</section>
+<section id="section2">
+    <div>
+        <p>red box</p>
+    </div>
+</section>
+<script type="text/javascript">
+    d3.select('#section1 > div')
+        .attr('class','blue box');
+    d3.select('#section2')
+        .style('font-size','2em')
+        .select('div')
+        .attr('class','red box');
+</script>
+</body>
+</html>

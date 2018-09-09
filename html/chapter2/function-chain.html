@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>function-chain</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    let body = d3.select('body');
+    body.append('section')
+        .attr('id', 'section1')
+        .append('div')
+        .attr('class', 'blue box')
+        .append('p')
+        .text('dynamic blue box');
+    body.append('section')
+        .attr('id', 'section2')
+        .append('div')
+        .attr('class', 'red box')
+        .append('p')
+        .text('dynamic red box');
+</script>
+
+</body>
+</html>
