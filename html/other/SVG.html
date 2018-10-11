@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>做一个简单的图表</title>
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+
+</body>
+<script type="text/javascript">
+    let width = 300;
+    let height = 300;
+
+    let svg = d3.select('body')
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height);
+
+    let dataset = [250, 210, 170, 130, 90]; // 数据
+
+    let rectHeight = 25;
+    svg.selectAll('rect')
+    .data(dataset)
+    .enter()
+    .append('rect')
+    .attr('x', 20)
+    .attr('y', function (d, i) {
+      return i * rectHeight;
+    })
+    .attr('width', function (d) {
+      return d;
+    })
+    .attr('height', rectHeight - 2)
+    .attr('fill', 'steelblue');
+</script>
+</html>

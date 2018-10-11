@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>比例尺</title>
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+<h1>第六课 比例尺的使用</h1>
+<p>
+    比例尺是D3中很重要的一个概念，上一章里曾经提到过直接使用数值的大小来表示像素不是一个好方法。
+</p>
+</body>
+<script type="text/javascript">
+    // 假定有以下数组：
+    let dataset = [1.2, 2.3, 0.9, 1.5, 3.3];
+    // 现在的要求是将dataset中最小的值，映射成0；最大的值映射为300.
+    let min = d3.min(dataset);
+    let max = d3.max(dataset);
+
+    let linear = d3.scaleLinear()
+      .domain([min, max])
+      .range([0, 300]);
+    linear(0.9);    // -> 0
+    linear(2.3);    // -> 175
+    linear(3.3);    // -> 300
+
+</script>
+</html>
