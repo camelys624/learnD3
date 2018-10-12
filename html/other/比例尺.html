@@ -12,6 +12,7 @@
 </p>
 </body>
 <script type="text/javascript">
+    /* 线性比例尺 */
     // 假定有以下数组：
     let dataset = [1.2, 2.3, 0.9, 1.5, 3.3];
     // 现在的要求是将dataset中最小的值，映射成0；最大的值映射为300.
@@ -19,11 +20,48 @@
     let max = d3.max(dataset);
 
     let linear = d3.scaleLinear()
-      .domain([min, max])
-      .range([0, 300]);
+        .domain([min, max])
+        .range([0, 300]);
     linear(0.9);    // -> 0
     linear(2.3);    // -> 175
     linear(3.3);    // -> 300
 
+    /* 序列比例尺 */
+    // 有时候，定义域和值域不一定是连续的
+    let index = [0, 1, 2, 3, 4];
+    let color = ['red', 'blue', 'green', 'yellow', 'black'];
+
+    let ordinal = d3.scaleOrdinal()
+        .domain(index)
+        .range(color);
+
+    /* 给柱状图添加比例尺 */
+    let width = 300;
+    let height = 300;
+
+    let svg = d3.select('body')
+	    .append('svg')
+	    .attr('width', width)
+	    .attr('height', height);
+
+    let dataset_1 = [2.5, 2.1, 1.7, 1.3, 0.9];
+    let linear_1 = d3.scaleLinear()
+        .domain([0, d3.max(dataset)])
+        .range([0, 300]);
+
+    let rectHeight = 25;
+    svg.selectAll('rect')
+        .data(dataset_1)
+        .enter()
+        .append('rect')
+        .attr('x', 20)
+        .attr('y', function (d, i) {
+            return i * rectHeight;
+        })
+        .attr('width', function (d) {
+            return linear(d);
+        })
+        .attr('height', rectHeight - 2)
+        .attr('fill', 'steelblue');
 </script>
 </html>
