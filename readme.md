@@ -364,9 +364,9 @@ var svg = d3.select("body")
 var dataset = [10, 20, 30, 40, 33, 24, 12, 5];
 
 //x轴的比例尺
-var xScale = d3.scaleOrdinal()
+var xScale = d3.scaleBand()
     .domain(d3.range(dataset.length))
-    .rangeRoundBands([0, width - padding.left - padding.right]);
+    .rangeRound([0, width - padding.left - padding.right]);
 
 //y轴的比例尺
 var yScale = d3.scaleLinear()
@@ -400,7 +400,7 @@ var rects = svg.selectAll(".MyRect")
         .attr("y",function(d){
             return yScale(d);
         })
-        .attr("width", xScale.rangeBand() - rectPadding )
+        .attr("width", xScale.step() - rectPadding )
         .attr("height", function(d){
             return height - padding.top - padding.bottom - yScale(d);
         });
@@ -419,7 +419,7 @@ var texts = svg.selectAll(".MyText")
             return yScale(d);
         })
         .attr("dx",function(){
-            return (xScale.rangeBand() - rectPadding)/2;
+            return (xScale.step() - rectPadding)/2;
         })
         .attr("dy",function(d){
             return 20;
@@ -427,4 +427,118 @@ var texts = svg.selectAll(".MyText")
         .text(function(d){
             return d;
         });
+```
+> 添加坐标轴的元素
+
+``` js
+//添加x轴
+svg.append("g")
+  .attr("class","axis")
+  .attr("transform","translate(" + padding.left + "," + (height - padding.bottom) + ")")
+  .call(xAxis);
+
+//添加y轴
+svg.append("g")
+  .attr("class","axis")
+  .attr("transform","translate(" + padding.left + "," + padding.top + ")")
+  .call(yAxis);
+```
+坐标轴的位置要结合空白padding的值来设定。
+### 9. 让图表动起来
+> 实现动态的方法
+D3提供了4个方法实现图形的过渡：从状态A变成状态B。
+
+**1. transition()**
+
+颜色变化：
+``` js
+.attr('fill', 'red')  // 初始颜色
+.transition()         // 启动过渡
+.attr('fill', 'steelblue')  // 最终颜色
+```
+**2. duration()**
+
+指定过渡的持续时间，单位为毫秒。
+如`duration(2000)`。
+
+**3. ease()**
+
+过渡方式：
+
+- easeLinear: 普通的线性变化
+- easeCircle: 慢慢地到达变换的最终状态
+- easeElastic: 带有弹跳的到达最终的状态
+- easeBounce: 在最终状态处弹跳几次
+
+调用形式如：`ease(d3.easeBounce)`。
+
+**4. delay()**
+
+指定延迟的时间，表示一定事件之后才开始转变，单位为毫秒。此函数可以对整体指定延迟，也可以对个别指定延迟。
+
+例一、对整体指定：
+``` js
+.transition()
+.duration(1000)
+.delay(500)
+```
+例二、对一个一个的图形（图形上绑定了数据）进行指定时：
+``` js
+.transition()
+.duration(1000)
+.delay(function (d, i) {
+  return 200 * i;
+})
+```
+> 实现简单的动态效果
+
+下面将在SVG画布里面添加三个圆，圆出现之后，立即出现过度效果。
+
+第一个圆，要求移动x坐标。
+``` js
+let circle = svg.append('circle')
+    .attr('cx', 100)
+    .attr('cy', 100)
+    .attr('r', 45)
+    .style('fill', 'green');
+// 在一秒内将圆心坐标轴由100变为300
+circle.transtion()
+  .duration(1000)
+  .attr('cr', 300);
+```
+第二个圆，要求即移动X坐标，又改变颜色。
+``` js
+circle.transition()
+  .duration(1500)
+  .attr('cx', 300)
+  .style('fill', 'red');
+```
+第三个圆，要求即移动x坐标，又改变颜色，还改变半径。
+``` js
+circle.transtion()
+  .duration(2000)
+  .ease('bounce')
+  .attr('cx', 300)
+  .style('fill', 'red')
+  .attr('r', 25);
+```
+> 给柱形图加上动态效果
+
+对前面完整柱形图的基础上稍作修改，既可作成一个代动态效果的，有意思的柱形图。在添加文字元素和矩形元素的时候，启动过渡效果，让各柱形和文字缓慢升至目标高度，并且在目标处跳动几次。
+
+对于文字元素，代码如下：
+``` js
+.attr('y', function (d) {
+  let min = yScale.domain()[0];
+  return yScale(min);
+})
+.transition()
+.delay(function(d, i){
+  return i * 200;
+})
+.duration(2000)
+.ease('bounce')
+.attr('y', function(d){
+  return yScale(d);
+})
 ```
