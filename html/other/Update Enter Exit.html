@@ -36,7 +36,6 @@
         .text(function (d) {
             return 'enter + ' + d;
         });
-
     /* Update和Exit的使用 */
     let dataExit = [3];
     let div = d3.select('body').selectAll('div');
@@ -45,13 +44,14 @@
     let updateE = div.data(dataExit);
 
     // 获取exit部分
-    let exit = update.exit();
+    let exit = updateE.exit();
     updateE.text(function (d) {
         return 'update ' + d;
     });
     exit.text(function (d) {
         return 'exit';
     });
-    exit.remove();
+    // exit部分的处理方通常是删除元素
+    // exit.remove();
 </script>
 </html>
