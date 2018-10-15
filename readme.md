@@ -542,3 +542,75 @@ circle.transtion()
   return yScale(d);
 })
 ```
+### 10. 理解Update、Enter、 Exit
+Update、Enter、Exit是D3中三个非常重要的概念，它处理的是当前选择集和数据的数量关系不确定的情况。
+
+前面多次出现如下代码：
+``` js
+svg.selectAll('rect') // 选择svg所有的矩形
+  .data(dataset)  // 绑定数组
+  .enter()  // 制定选择集的enter部分
+  .append('rect') // 添加足够数量的矩形元素
+```
+这段代码使用的情况是当以下情况出现的时候:
+
+***有数据，而没有足够图形元素的时候，使用此方法可以添加足够的元素***
+
+假设，在body中有三个p元素，有一数组[3, 6, 9],则可以将数组中的每一项分别与一个p元素绑定在一起。但是，有一个问题：**当数组的长度与元素数量不一致（数组长度>元素数量or数组长度<元素数量）时**。
+
+如果数组为[3, 6, 9, 23, 15],将此数组绑定到三个p元素的选择集上。会有两个数据没有元素与之对应，这时候D3会建立两个空元素与数据对应，这个部分就被称为**Enter**。而有元素与数据对应的部分称为Update。如果数组为[3],则会有两个元素没有数据绑定，那么没有数据绑定的部分被称为Exit。示意图如下：
+
+![](.png)
+
+> Update和Enter的使用
+
+当对应元素不足时(绑定数据数量 > 对应元素),需要添加元素(append).
+
+现在body中有三个p元素,要绑定一个长度大于三的数组到p选择集上,然后分别处理update和enter两个部分.
+``` js
+let dataset = [3, 6, 9, 23, 34];
+// 选择body中的p元素
+let p = d3.select('body').selectAll('p');
+// 获取update部分
+let update = p.data(dataset);
+// 获取enter部分
+let enter = update.enter();
+// update部分的处理:更新属性值
+update.text(function () {
+  return 'update' + d;
+});
+// enter部分的处理:添加元素后赋予属性值
+enter.append('p')
+  .text(function (d) {
+    return 'enter' + d;
+  });
+```
+所以，需要记住的是：
+- update部分的处理方法一般是： 更新属性值
+- enter部分的处理方法一般是： 添加元素后，赋予属性值
+> Update和Exit的使用
+
+当对应的元素过多时（绑定数据 < 对应元素），需要删除多余的元素。
+
+现在body中有三个p元素，要绑定一个长度小于3的数组到p的选择集上，然后分别处理update和exit两部分。
+``` js
+let dataset = [3];
+// 选择body中的p元素
+let p = d3.select('body').selectAll('p');
+// 获取update部分
+let update = p.data(dataset);
+// 获取exit部分
+let exit = update.exit();
+// update部分的处理： 更新属性值
+update.text(function (d) {
+  return 'update' + d;
+});
+// exit部分的处理： 修改p元素的属性
+exit.text(function (d) {
+  return 'exit';
+});
+// exit部分的处理通常是删除元素
+exit.remove();
+```
+需要注意的是：
+- exit部分的处理方法一般是：删除元素(remove)

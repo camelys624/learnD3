@@ -119,11 +119,17 @@
 		.attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
         .attr('y', function (d) {
             let min = yScale.domain()[0];
-
+            return yScale(min);
         })
 		.attr('x', function (d, i) {
 			return xScale(i) + rectPadding / 2;
 		})
+        .transition()
+        .delay(function (d, i) {
+            return i * 200;
+        })
+        .duration(2000)
+        .ease(d3.easeBounce)
 		.attr('y', function (d) {
 			return yScale(d);
 		})

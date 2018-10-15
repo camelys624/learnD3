@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>理解Update、Enter、Exit</title>
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+<p></p>
+<p></p>
+<p></p>
+<div></div>
+<div></div>
+<div></div>
+</body>
+<script type="text/javascript">
+    /* Update和Enter的使用 */
+    let dataEnter = [3, 6, 9, 23, 45];
+
+    // 选择body中的p元素
+    let pEnter = d3.select('body').selectAll('p');
+
+    // 获取uodate的部分
+    let update = pEnter.data(dataEnter);
+
+    // 获取update部分
+    let enter = update.enter();
+
+    // update部分的处理： 更新属性值
+    update.text(function (d) {
+        return 'update + ' + d;
+    });
+
+    // enter部分的处理： 添加元素后赋予属性值
+    enter.append('p')
+        .text(function (d) {
+            return 'enter + ' + d;
+        });
+
+    /* Update和Exit的使用 */
+    let dataExit = [3];
+    let div = d3.select('body').selectAll('div');
+
+    // 获取update部分
+    let updateE = div.data(dataExit);
+
+    // 获取exit部分
+    let exit = update.exit();
+    updateE.text(function (d) {
+        return 'update ' + d;
+    });
+    exit.text(function (d) {
+        return 'exit';
+    });
+    exit.remove();
+</script>
+</html>
