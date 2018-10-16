@@ -17,6 +17,12 @@
         .attr('width', width)
         .attr('height', height);
 
+    let circle = svg.append('circle')
+        .attr('r', 25);
+    circle.on('click', function () {
+         console.log(d3.event);
+    });
+
     // 画布周边的空白
     let padding = {left: 30, right: 30, top: 20, bottom: 20};
 
@@ -37,13 +43,6 @@
     let xAxis = d3.axisBottom(xScale);
     // 定义y轴
     let yAxis = d3.axisLeft(yScale);
-
-    let circle = svg.append('circle');
-    circle.on('click', function () {
-        // 在这里添加交互内容
-        console.log(d3.event);
-    });
-
 
     // 矩形之间的空白
     let rectPadding = 4;
@@ -77,6 +76,41 @@
                 .attr('fill', 'steelblue')
         });
 
+    // 添加文字元素
+    let texts = svg.selectAll('.myText')
+        .data(dataset)
+        .enter()
+        .append('text')
+        .attr('class', 'myText')
+        .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
+        .attr('x', function (d, i) {
+            return xScale(i) + rectPadding / 2;
+        })
+        .attr('y', function (d) {
+            return yScale(d);
+        })
+        .attr('dx', function () {
+            return (xScale.step() - rectPadding) / 4;
+        })
+        .attr('dy', function () {
+            return 20;
+        })
+        .text(function (d) {
+            return d;
+        });
+
+    /* 添加坐标轴的元素 */
+    // 添加x轴
+    svg.append('g')
+        .attr('class', 'axis')
+        .attr('transform', 'translate(' + padding.left + ',' + (height - padding.bottom) + ')')
+        .call(xAxis);
+
+    // 添加y轴
+    svg.append('g')
+        .attr('class', 'axis')
+        .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
+        .call(yAxis);
 </script>
 </body>
 </html>

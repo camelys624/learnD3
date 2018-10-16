@@ -614,3 +614,299 @@ exit.remove();
 ```
 需要注意的是：
 - exit部分的处理方法一般是：删除元素(remove)
+### 11. 交互操作
+在图形上设置一个或i多个监听器，当事件发生时，作出相应的反应。
+> 什么是交互
+
+交互，指的是用户输入了某种指令，程序接受到指令之后必须作出某种响应。对可视化图形来说，交互使图表更加生动，能表现出更多内容。
+
+**用户用于交互的工具一般有三种：鼠标、键盘、触屏。**
+> 如何添加交互
+
+对某一元素添加交互操作十分简单。
+``` js
+let circle = svg.append('circle');
+circle.on('click', function () {
+  // 这里添加交互内容
+});
+```
+通过on()函数添加事件监听器。在D3中，每一个选择集都有on()函数，用于添加事件监听器。
+
+on()接受两个函数，第一个参数是监听的事件，第二个参数是监听到事件后响应的内容，是一个函数。
+
+鼠标常用事件有：
+- **click** 鼠标点击
+- **mouseover** 鼠标在元素上
+- **mouseout** 鼠标从元素上移开
+- **mousemove** 鼠标被移动的时候
+- **mousedown** 鼠标按钮被按下
+- **mouseup** 鼠标按钮被松开
+
+> **注意： 没有dblclick双击事件，要实现的话需要用（click + 延迟判定）来模拟**
+
+键盘常用的事件有三个：
+
+- **keydown**: 当用户按下任意键时触发，按住不放会重复触发该事件。该事件不会区分字母大小写，“A”和“a”会被视为一致。
+- **keypress**: 当用户按下字符键（大小写、数字、符号、回车等）时触发，按住不放会重复，该事件区分大小写。
+- **keyup**: 当用户释放键时触发，不区分字母的大小写。
+
+触屏常用的事件：
+- **touchstart**： 当触摸点被放在触摸屏上时。
+- **touchmove**： 当触摸点在触摸屏上移动时。
+- **touchend**： 当触摸点从触摸屏上拿开时。
+
+### 12. 布局layout
+D3总共提供了12个布局：饼状图(Pie)、力导向图(Force)、弦图(Chord)、树状图(Tree)、集群图(Cluster)、捆图(Bundle)、打包图(Pack)、直方图(Histogram)、分区图(Partition)、堆栈图(Stack)、矩阵树图(Treemap)、层级图(Hierarchy)。12个布局中，层级图(Hierarchy)不能直接使用。集群图、打包图、分区图、树状图、矩阵树图是由层级图扩展来的。这些布局的作用都是将某种数据转换成另一种数据，而转换后的数据是利于可视化的。
+
+链接：[D3.js 布局layout](http://d3.decembercafe.org/pages/lessons/12.html)
+
+### 13. 饼状图
+> 数据
+
+有如下数据，需要可视化：
+``` js
+let dataset = [30, 10, 43, 55, 13];
+```
+这些值不能直接绘图，需要用到布局，布局的作用就是：**计算出适合作图的数据**。
+
+> 布局
+``` js
+// 定义一个布局
+let pie = d3.pie();
+// 赋值
+let piedata = pie(dataset);
+console.log(piedata);
+```
+输出结果如下：
+![](image/1.png)
+如上所示，5个整数被转换成了5个对象，每个对象都有属性：**起始角度(startAngle)**和**中止角度(endAngle)**,还有原数据(data)。
+
+值得注意的是：**布局不是要直接绘图，而是为了得到绘图所需的数据。**
+
+> 绘制图形
+
+在绘制图形之前，先定义一个颜色比例尺color：
+``` js
+// 设置一个颜色比例尺
+let color = d3.scaleOrdinal()
+    .domain(d3.range(dataset.length))
+    .range(d3.schemeCategory10);
+```
+如果用原生的SVG方法来绘制，这些路径是十分难计算的，所以我们用到了一个**弧生成器**，能够生成弧的路径。
+``` js
+// 弧生成器
+let outerRadius = 150;  // 外半径
+let inneRadius = 0; // 内半径，为0就表示不是一个环状图
+let arc = d3.arc()
+    .innerRadius(inneRadius)
+    .outerRadius(outerRadius);
+```
+然后在SVG中添加图形元素。先在`<svg>`里添加足够数量的分组元素`<g>`。
+``` js
+let arcs = svg.selectAll('g')
+    .data(piedata)
+    .enter()
+    .append('g')
+    .attr('transform', 'translate(' + (width / 2) + ',' + (width / 2) + ')');
+arcs.append('path')
+    .attr('fill', function (d, i) {
+        return color(i);
+    })
+    .attr('d', function (d) {
+        return arc(d);  // 调用弧生成器，得到路径值
+    });
+```
+最后在每一个弧线中心添加文本：
+``` js
+arcs.append('text')
+    .attr('transform', function (d) {
+        return 'translate(' + arc.centroid(d) + ')';
+    })
+    .attr('text-anchor', 'middle')
+    .text(function (d) {
+        return d.data;  // 返回的是d.data
+    });
+```
+### 14. 制作力导向图
+> 数据准备
+``` js
+let height = 600, width = 960;
+let marge = {top: 60, bottom: 60, left: 60, right: 60};
+let svg = d3.select('body').append('svg')
+    .attr('x', 100)
+    .attr('y', 50)
+    .attr('height', height)
+    .attr('width', width);
+let g = svg.append('g')
+    .attr('tranform', 'translate(' + marge.top + ',' + marge.left + ')');
+
+// 初始数据：
+// 节点(node)和连线(edges)的数组，节点是一些城市名，连线的两端是结点的序号
+let nodes = [
+    {name: '桂林'}, {name: '广州'},
+    {name: '厦门'}, {name: '重庆'},
+    {name: '上海'}, {name: '杭州'},
+    {name: '天津'}, {name: '成都'}
+];
+let edges = [
+    {source: 0, target: 1, value: 1.3}, {source: 0, target: 2, value: 1.4},
+    {source: 0, target: 3, value: 1}, {source: 3, target: 4, value: 2},
+    {source: 3, target: 5, value: 0.8}, {source: 1, target: 6, value: 1.7},
+    {source: 3, target: 7, value: 1.5}, {source: 1, target: 7, value: 1.5}
+];
+```
+值得注意的是：**不同于V3版本，V5这里需要指定两个点之间的距离，也就是value,V3则需要在后面代码中指定**
+
+> 设置一个颜色比例尺
+
+``` js
+let color = d3.scaleOrdinal()
+    .domain(d3.range(nodes.length))
+    .range(d3.schemeCategory10);
+```
+> 新建一个力导向图
+
+``` js
+// 定义一个力导向图的布局
+let force = d3.forceSimulation()
+    .force('link', d3.forceLink())
+    .force('charge', d3.forceManyBody())
+    .force('center', d3.forceCenter());
+```
+> 生成节点数据
+
+``` js
+force.nodes(nodes)
+    .on('tick', ticked);
+```
+> 生成边集数据
+``` js
+force.force('link')
+    .links(edges)
+    .distance(function (d) {    // 设置每一边的长度
+        return d.value * 100;
+    });
+```
+> 设置图形中心位置
+``` js
+force.force('center')
+    .x(width / 2)
+    .y(height / 2);
+```
+> 输出顶点集和边集
+
+结果如下：
+
+![](image/2.png)
+
+> 添加连线
+
+``` js
+let links = g.append('g').selectAll('line')
+    .data(edges)
+    .enter()
+    .append('line')
+    .style('stroke', function (d, i) {
+        return color(i);
+    })
+    .style('stroke-width', 1);
+```
+> 添加连线
+
+``` js
+let svg_nodes = svg.selectAll('circle')
+    .data(nodes)
+    .enter()
+    .append('circle')
+    .attr('r', 20)
+    .style('fill', function (d, i) {
+        return color(i);
+    })
+    .call(d3.drag()
+        .on('start',started)
+        .on('drag',dragged)
+        .on('end', ended));  // 使得节点能够拖动
+```
+> 添加节点和文字
+``` js
+let svg_nodes = svg.selectAll('circle')
+    .data(nodes)
+    .enter()
+    .append('circle')
+    .attr('r', 20)
+    .style('fill', function (d, i) {
+        return color(i);
+    })
+    .call(d3.drag()
+        .on('start',started)
+        .on('drag',dragged)
+        .on('end', ended));  // 使得节点能够拖动
+// 添加描述节点的文字
+let svg_texts =svg.selectAll('text')
+    .data(nodes)
+    .enter()
+    .append('text')
+    .style('fill', 'black')
+    .attr('dx', 20)
+    .attr('dy', 8)
+    .text(function (d) {
+        return d.name;  // 获取的是转换后的数据
+    });
+```
+> ticked函数的实现
+``` js
+function ticked() {
+    links
+        .attr('x1', function (d) {
+            return d.source.x;
+        })
+        .attr('y1', function (d) {
+            return d.source.y;
+        })
+        .attr('x2', function (d) {
+            return d.target.x;
+        })
+        .attr('y2', function (d) {
+            return d.target.y;
+        });
+    // 更新节点坐标
+    svg_nodes.attr('cx', function (d) {
+        return d.x;
+    })
+        .attr('cy',function (d) {
+            return d.y;
+        });
+    // 更新文字坐标
+    svg_texts.attr('x', function (d) {
+        return d.x;
+    })
+        .attr('y', function (d) {
+            return d.y;
+        })
+}
+```
+> drag函数实现
+``` js
+function started(d) {
+    if (!d3.event.active) {
+        force.alphaTarget(0.8).restart();   // 设置衰减系数，对节点位置移动过程的模拟数值越高越快
+    }
+    d.fx = d.x;
+    d.fy = d.y;
+}
+function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+}
+function ended(d) {
+    if(!d3.event.active){
+        force.alphaTarget(0);
+    }
+    d.fx = null;
+    d.fy = null;
+}
+```
+最终效果如下：
+
+
+![](image/3.png)

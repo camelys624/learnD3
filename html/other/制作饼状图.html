@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>饼状图</title>
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    let height = 400,width = 400;
+    let svg = d3.select('body').append('svg')
+        .attr('x', 100)
+        .attr('y', 50)
+        .attr('height', height)
+        .attr('width', width);
+
+    let dataset = [30, 10, 43, 55, 13];
+
+    // 定义一个布局
+    let pie = d3.pie();
+
+    // 赋值
+    let piedata = pie(dataset);
+    console.log(piedata);
+    // 布局不是要直接绘图，而是为了得到绘图所需的数据
+
+    /* 绘制图形 */
+    // 弧生成器
+    let outerRadius = 150;  // 外半径
+    let inneRadius = 0; // 内半径，为0就表示不是一个环状图
+    let arc = d3.arc()
+        .innerRadius(inneRadius)
+        .outerRadius(outerRadius);
+
+    // 设置一个颜色比例尺
+    let color = d3.scaleOrdinal()
+        .domain(d3.range(dataset.length))
+        .range(d3.schemeCategory10);
+
+    let arcs = svg.selectAll('g')
+        .data(piedata)
+        .enter()
+        .append('g')
+        .attr('transform', 'translate(' + (width / 2) + ',' + (width / 2) + ')');
+    arcs.append('path')
+        .attr('fill', function (d, i) {
+            return color(i);
+        })
+        .attr('d', function (d) {
+            return arc(d);  // 调用弧生成器，得到路径值
+        });
+
+    // 在每一个弧线中心添加文本
+    arcs.append('text')
+        .attr('transform', function (d) {
+            return 'translate(' + arc.centroid(d) + ')';
+        })
+        .attr('text-anchor', 'middle')
+        .text(function (d) {
+            return d.data;  // 返回的是d.data
+        });
+</script>
+</body>
+</html>
