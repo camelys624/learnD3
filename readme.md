@@ -975,6 +975,157 @@ d3.json('./china.json').then(function (data) {
 值得注意的是，在V3版本中获取json函数的返回方式不一样，V3版本是: `d3.json('url',function(error,data){console.logo(data);})`
 
 结果如下所示：
-dsa
 
 ![](image/4.png)
+
+### 16. 布局 弦图（与V3版本之间的区别太多就不指出来了）
+> 弦图主要用于展示多个节点之间的联系。
+
+两点之间的连线，表示谁和谁具有联系。
+
+![](image/5.png)
+
+显得粗细表示权重。
+
+![](image/6.png)
+
+> 数据
+
+现有数据如下：
+``` js
+const city_name = ['北京', '上海', '广州', '深圳', '香港'];
+const population = [
+    [1000, 3045, 4567, 2331, 3714],
+    [3214, 2000, 2060, 124, 3234],
+    [8761, 6545, 3000, 8045, 647],
+    [3211, 1067, 3214, 4000, 1006],
+    [2145, 1034, 6745, 4764, 5000]
+];
+```
+数据都是一些城市名和数字，关系如下：
+| 城市 | 北京 | 上海 | 广州 | 深圳 | 香港 |
+| ---- | ---- | ---- | ---- | ---- | ---- |
+| 北京 | 1000 | 3045 | 4567 | 2331 | 3714 |
+| 上海 | 3214 | 2000 | 2060 | 124  | 3234 |
+| ...  | ...  | ...  | ...  | ...  | ...  |
+左边第一列是被统计人口的城市，上边一行是被统计的来源城市。即：北京有1000个是本地人，有3045个来自上海....。
+
+> 布局（数据转换）
+
+弦图的布局定义如下：
+``` js
+// 布局（数据转换）
+let chord_layout = d3.chord()
+    .padAngle(0.03)  // 节点之间的间隔
+    .sortSubgroups(d3.descending);   // 排序
+chord_layout = chord_layout(population);  // 将数据转换为我们需要的形式
+```
+输出转换的数据：
+``` js
+// 应用布局转换数据
+const groups = chord_layout.groups;
+const chords = chord_layout;
+console.log(chord_layout);
+```
+输出结果如下：
+
+![](image/7.png)
+
+> 定义相关变量
+
+``` js
+const height = 600, width = 600;
+const innerRadius = width / 2* 0.7;
+const outerRadius = innerRadius * 1.1;
+const svg = d3.select('body').append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .append('g')
+    .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
+// 设置颜色比例尺
+let color = d3.scaleOrdinal()
+    .domain(d3.range(5))
+    .range(d3.schemeCategory10);
+```
+> 绘制节点
+
+绘制节点（即分组，有多少个城市画多少个弧形），以及绘制城市名称。
+``` js
+// 外圈及文字
+let outer_arc = d3.arc()
+    .innerRadius(innerRadius)
+    .outerRadius(outerRadius);
+let g_outer = svg.append('g');
+g_outer.selectAll('path')
+    .data(groups)
+    .enter()
+    .append('path')
+    .style('fill',  function (d) {
+        return color(d.index);
+    })
+    .style('stroke', function (d) {
+        return d3.rgb(color(d.index)).darker();
+    })
+    .attr('d', outer_arc);
+g_outer.selectAll('text')
+    .data(groups)
+    .enter()
+    .append('text')
+    .each(function (d, i) {
+        d.angle = (d.startAngle + d.endAngle) / 2;
+        d.name = city_name[i];
+    })
+    .attr('dy', '.35em')
+    .attr('transform', function (d) {
+        return 'rotate(' + (d.angle * 180 / Math.PI) + ')' +
+                'translate(0, ' + -1.0 * (outerRadius + 10) + ')' +
+            ((d.angle > Math.PI * 3 / 4 && d.angle < Math.PI * 5 / 4) ? 'rotate(180)' : '');
+    })
+    .text(function (d) {
+        return d.name;
+    });
+```
+节点位于弦图的外部，节点数组groups的每一项都包含起始角度和终止角度，因此节点与饼图其实是相似的。
+
+然后就是节点的文字，有两个地方需要特别注意：
+
+- **each()**: 表示对任何一个绑定数据的元素，都执行后面的匿名函数 `function(d, i)`函数体里面做两件事：
+  - 计算起始角度和终止角度的平均值，赋值给d.angle。
+  - 将city_name[i]城市名称赋值给d.city_name
+
+- **transform()的参数**： 用translate进行坐标变换时，要注意顺序： rotate -> translate(先旋转再平移)。此外：`((d.angle > Math.PI * 3 / 4 && d.angle < Math.PI * 5 / 4) ? 'rotate(180)' : '')`的意思是，当角度在135度到225度之间，旋转180度。不然下方的文字时倒的。
+
+> 绘制连线（弦）
+
+``` js
+// 绘制连线
+let inner_chord = d3.ribbon()
+    .radius(innerRadius);
+svg.append('g')
+    .attr('class', 'chord')
+    .selectAll('path')
+    .data(chords)
+    .enter()
+    .append('path')
+    .attr('d', inner_chord)
+    .style('fill', function (d) {
+        return color(d.target.index);
+    })
+    .style('opacity', 0.67)
+    .style('stroke', function (d) {
+        return d3.rgb(color(d.index)).darker();
+    })
+    .on('mouseover', function (d, i) {
+        d3.select(this)
+            .style('fill', 'yellow');
+    })
+    .on('mouseout', function (d, i) {
+        d3.select(this)
+            .transition()
+            .duration(1000)
+            .style('fill', color(d.source.index));
+    });
+```
+运行结果如下所示：
+
+![](image/8.png)
