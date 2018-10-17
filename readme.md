@@ -910,3 +910,71 @@ function ended(d) {
 
 
 ![](image/3.png)
+
+### 15. 中国地图
+> 地图的获取
+
+获取地图链接：[china.geojosn](http://d3.decembercafe.org/demo/rm/lesson15/china.geojson)
+
+> 创建画布
+
+``` js
+let width = 1000, height = 1000;
+let svg = d3.select('body').append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .append('g')
+    .attr('transform', 'translate(0, 0)');
+```
+> 投影函数
+
+``` js
+let projection = d3.geoMercator()
+    .center([107, 31])
+    .scale(850)
+    .translate([width / 2, height / 2]);
+```
+
+> 地理路径生成器
+
+``` js
+let path = d3.geoPath()
+    .projection(projection);
+```
+> 设置颜色比例尺
+
+``` js
+let color = d3.scaleOrdinal()
+    .domain(d3.range(5))
+    .range(d3.schemeCategory10);
+```
+> 向服务器请求数据并绘图
+
+``` js
+d3.json('./china.json').then(function (data) {
+    svg.selectAll('path')
+        .data(data.features)
+        .enter()
+        .append('path')
+        .attr('stroke', '#000')
+        .attr('stroke-width', 1)
+        .attr('fill', function (d, i) {
+            return color(i);
+        })
+        .attr('d', path)    // 使用地理路径生成器
+        .on('mouseover', function (d, i) {
+            d3.select(this)
+                .attr('fill', 'yellow');
+        })
+        .on('mouseout', function (d, i) {
+            d3.select(this)
+                .attr('fill', color(i))
+        });
+});
+```
+值得注意的是，在V3版本中获取json函数的返回方式不一样，V3版本是: `d3.json('url',function(error,data){console.logo(data);})`
+
+结果如下所示：
+dsa
+
+![](image/4.png)

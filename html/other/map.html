@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>地图制作</title>
     <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+    <!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
 </head>
 <body>
 <script type="text/javascript">
@@ -14,22 +15,25 @@
         .append('g')
         .attr('transform', 'translate(0, 0)');
 
+    // 投影函数
     let projection = d3.geoMercator()
         .center([107, 31])
         .scale(850)
         .translate([width / 2, height / 2]);
+
+    // 地理路径生成器
     let path = d3.geoPath()
         .projection(projection);
 
     // 设置颜色比例尺
     let color = d3.scaleOrdinal()
-        .domain(d3.range(5))
+        .domain(d3.range(10))
         .range(d3.schemeCategory10);
-    d3.json('./china.json', function (error, data) {
+    // let color = d3.scale.category20();
+
+    // 向服务器请求数据并绘图
+    d3.json('../../data/china.json').then(function (data) {
         console.log(data);
-        if (error) {
-            return console.error(error);
-        }
         svg.selectAll('path')
             .data(data.features)
             .enter()
@@ -48,8 +52,7 @@
                 d3.select(this)
                     .attr('fill', color(i))
             });
-
-    })
+    });
 </script>
 </body>
 </html>
