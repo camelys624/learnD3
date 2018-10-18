@@ -7,25 +7,79 @@
 </head>
 <body>
 <script type="text/javascript">
-    const width = 500, height = 500;
+    const width = 932;
 
-    const svg = d3.select('body').append('svg')
-        .attr('width', width)
-        .attr('height', height)
-        .append('g')
-        .attr('transform', 'translate(40, 0)');
+    // 定义集群
+    let tree = data => {
+      const root = d3.hierarchy(data)   // 从给定的层次结构数据构造一个根节点并未各个节点指定深度等属性
+          .sort((a, b) => (a.height - b.height)) ||     // 排序所有的后代兄弟节点
+          a.data.name.localeCompare(b.data.name);
+      root.dx = 20;
+      root.dy = width / (root.height + 1);
+      return d3.cluster().nodeSize([root.dx, root.dy])(root);
+      // d3.cluster()创建一个新的集群（系统树图）布局
+      // cluster.nodeSize 设置节点尺寸
+    };
 
-    // 定义一个集群图布局：
-    let cluster = d3.cluster()
-        .size([width, height - 200]);
+    // 获取数据
+    d3.json('../../data/city.json').then(function (data) {
+        const root = tree(data);
+        let x0 = Infinity;
+        let x1 = -x0;
+        root.each(d => {    // 广度优先遍历当前子树
+            if (d.x > x1) x1 = d.x;
+            if (d.x < x0) x0 = d.x;
+        });
 
-    d3.json('../../data/city.json').then(function (root) {
-        let nodes = d3.hierarchy(root);
-        let links = cluster.links(nodes);
+        const svg = d3.select('body').append('svg')
+            .style('width', '100%')
+            .style('height', 500);
+        const g = svg.append('g')
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', 10)
+            .attr('transform', `translate(${root.dy / 3}, ${root.dx - x0})`);
 
-        console.log(nodes);
-        console.log(links);
-    })
+        let link = g.append('g')
+            .attr('fill', 'none')
+            .attr('stroke', '#555')
+            .attr('stroke-opacity', 0.4)
+            .attr('stroke-width', 1.5)
+            .selectAll('path')
+            .data(root.links())
+            .enter().append('path')
+            .attr('d', d => `
+            M${d.target.y},${d.target.x}
+            C${d.source.y + root.dy / 2},${d.target.x}
+            ${d.source.y + root.dy / 2},${d.source.x}
+            ${d.source.y},${d.source.x}
+            `);
+    // .attr('d', d => {
+    //         const o = {x: root.dx, y: root.dy};
+    //         return console.log(diagonal({source: o, target: o}));
+    //     });
+        const node = g.append('g')
+            .attr('stroke-linejoin', 'round')
+            .attr('stroke-width', 3)
+            .selectAll('g')
+            .data(root.descendants().reverse())
+            .enter().append('g')
+            .attr('transform', d => `translate(${d.y}, ${d.x})`);
+
+        node.append('circle')
+            .attr('fill', d => d.children ? '#555' : '#999')
+            .attr('r', 2.5);
+
+        node.append('text')
+            .attr('dy', '0.31em')
+            .attr('x', d => d.children ? -6 : 6)
+            .text(d => d.data.name)
+            .filter(d => d.children)
+            .attr('text-anchor', 'end')
+            .clone(true).lower()
+            .attr('stroke', 'white');
+    });
+
+
 </script>
 </body>
 </html>

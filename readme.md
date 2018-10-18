@@ -614,6 +614,7 @@ exit.remove();
 ```
 需要注意的是：
 - exit部分的处理方法一般是：删除元素(remove)
+
 ### 11. 交互操作
 在图形上设置一个或i多个监听器，当事件发生时，作出相应的反应。
 > 什么是交互
@@ -670,6 +671,7 @@ let dataset = [30, 10, 43, 55, 13];
 这些值不能直接绘图，需要用到布局，布局的作用就是：**计算出适合作图的数据**。
 
 > 布局
+
 ``` js
 // 定义一个布局
 let pie = d3.pie();
@@ -729,6 +731,7 @@ arcs.append('text')
 ```
 ### 14. 制作力导向图
 > 数据准备
+
 ``` js
 let height = 600, width = 960;
 let marge = {top: 60, bottom: 60, left: 60, right: 60};
@@ -1133,4 +1136,137 @@ svg.append('g')
 ![](image/8.png)
 
 ### 17. 布局 集群图
-**太难，明天再弄！！！！**
+集群图是一种表示包含与被包含关系的图表。
+
+> 布局
+
+定义一个集群图布局：
+``` js
+// 定义集群
+let tree = data => {
+  const root = d3.hierarchy(data)   // 从给定的层次结构数据构造一个根节点并未各个节点指定深度等属性
+      .sort((a, b) => (a.height - b.height)) ||     // 排序所有的后代兄弟节点
+      a.data.name.localeCompare(b.data.name);
+  root.dx = 20;
+  root.dy = width / (root.height + 1);
+  return d3.cluster().nodeSize([root.dx, root.dy])(root);
+  // d3.cluster()创建一个新的集群（系统树图）布局
+  // cluster.nodeSize 设置节点尺寸
+};
+```
+操作数据，将其转换为我们需要的格式：
+``` js
+const root = tree(data);
+let x0 = Infinity;
+let x1 = -x0;
+root.each(d => {    // 广度优先遍历当前子树
+    if (d.x > x1) x1 = d.x;
+    if (d.x < x0) x0 = d.x;
+});
+```
+绘制节点和路径：
+``` js
+const svg = d3.select('body').append('svg')
+    .style('width', '100%')
+    .style('height', 500);
+const g = svg.append('g')
+    .attr('font-family', 'sans-serif')
+    .attr('font-size', 10)
+    .attr('transform', `translate(${root.dy / 3}, ${root.dx - x0})`);
+let link = g.append('g')
+    .attr('fill', 'none')
+    .attr('stroke', '#555')
+    .attr('stroke-opacity', 0.4)
+    .attr('stroke-width', 1.5)
+    .selectAll('path')
+    .data(root.links())
+    .enter().append('path')
+    .attr('d', d => `
+      M${d.target.y},${d.target.x}
+      C${d.source.y + root.dy / 2},${d.target.x}
+      ${d.source.y + root.dy / 2},${d.source.x}
+      ${d.source.y},${d.source.x}
+    `);
+const node = g.append('g')
+    .attr('stroke-linejoin', 'round')
+    .attr('stroke-width', 3)
+    .selectAll('g')
+    .data(root.descendants().reverse())
+    .enter().append('g')
+    .attr('transform', d => `translate(${d.y}, ${d.x})`);
+node.append('circle')
+    .attr('fill', d => d.children ? '#555' : '#999')
+    .attr('r', 2.5);
+node.append('text')
+    .attr('dy', '0.31em')
+    .attr('x', d => d.children ? -6 : 6)
+    .text(d => d.data.name)
+    .filter(d => d.children)
+    .attr('text-anchor', 'end')
+    .clone(true).lower()
+    .attr('stroke', 'white');
+```
+节点路径是真的难，需要研究SVG路径，看了表示看不到懂，不管了。
+
+最后结果如下：
+
+![](image/9.png)
+
+### 17+. SVG \<path>标签
+前面那一段代码，其中的东西结合官方api的话都还能理解，就是一些函数，但是这一砣是真的不晓得啥子意思：
+``` js
+M${d.target.y},${d.target.x}
+C${d.source.y + root.dy / 2},${d.target.x}
+${d.source.y + root.dy / 2},${d.source.x}
+${d.source.y},${d.source.x}
+```
+通过查询在MDN（讲道理菜鸟教程写的十分抽象）上的SVG我们可以知道这个是属于\<path>标签的一个属性，下面来详细研究一下这个d属性。
+
+#### d属性
+> 该属性定义了一个路径
+
+属性`d`实际上是一个字符串，包含了一些列路径描述。这些路径由下面这些指令组成：
+- Moveto
+- Lineto
+- Curveto
+- Arcto
+- ClosePath
+
+这些组合在一个字符串重。这些不同的命令是大小写敏感的；一个答谢的命令指明它的参数是绝对位置，而小写的命令指明相对于当前位置的点。可以指定一个负数值作为命令的参数：负角度将是逆时针的，绝对x和y位置将视为负坐标。负相对x值将会往左移，而负相对y值将会向上移。
+
+#### Moveto
+
+`Moveto`指令可以被想象成拿起画笔，放在另一处。在上一个点和这个点之间没有线段绘制。用一个Moveto命令开始一个路径是好的作法。因为如果没有一个初始化的Moveto,执行命令时开始点会是上一个操作发生过的地方，这样可能造成不确定的行为。
+
+用法：
+- `M x,y` 在这里x和y是绝对坐标，分别代表水平坐标和垂直坐标。
+- `m dx,dy` 在这里dx和dy是相对于当前点的距离，分别是向右和向下的距离。
+
+示例：
+- 位于绝对位置x=50, y=100:`<path d = 'M50,100...'/>`
+- 往右移50，往下移100：`<path d = 'm50, 100...'/>`
+
+#### Lineto
+
+和`Moveto`指令不同，`Lineto`指令将绘制一条直线段。这个直线段从当前位置移到指定位置。原生的`Lineto`命令的语法是"L x,y"或者"l dx, dy"，这里x和y是绝对位置，dx和dy是偏移位置。**还有字母H和V，分别指定水平和垂直移动。他们的语法与L相同**。
+
+#### Curveto
+
+Curveto命令指定了一个贝塞尔曲线。有两种类型的贝塞尔曲线：立方曲线和二次方曲线。二次方贝塞尔曲线是一种特殊的立方贝塞尔曲线，在这里，控制点的两端是相同的。二次方贝塞尔曲线的语法是`"Q cx,cy x,y"`或`"q dcx,xcy dx,dy"`。cx和xy都是控制点的绝对坐标。dcx和dcy分别是控制点在x和y方向上的距离。
+
+立方贝塞尔曲线遵守二次方贝塞尔曲线同样的概念，但是它需要考虑两个控制点。立方贝塞尔曲线的语法是：`"C c1x,c1y c2x,c2y x,y"`或者`"c dc1x,dc1y dc2x,dc2y dx,dy"`，在这里，c1x、c1y和c2x、c2y分别是初始点和结束点的控制的绝对坐标。dc1x、dc1y和dc2x、dc2y都是相对于初始点，而不是相对于结束点的，dx,dy分别是向右和向下的距离。
+
+为了连缀平滑的贝塞尔曲线，可以使用T和S命令。它们的语法比别的Curveto命令简单，因为它假定第一个控制点是从前一个控制点关于前一个点的反射，或者说如果没有前一个控制点的话它实际上就是前一个点。T的语法是`"T x,y"`或者`"t dx,dy"`，分别对应与绝对坐标和相对距离，用来创建二次贝塞尔曲线。S用来创建立方贝塞尔曲线，语法是`"S cx,cy x,y"`或者`"s dcx,dcy dx,dy"`，这里(d)cx指定第二个控制点。
+
+最后，所有的贝塞尔曲线命令可以制作出一个多边贝塞尔图形，现初始化命令，然后多次指定所有的参数，就可以制作一个多变贝塞尔图形。
+
+#### Arcto
+
+有时候描诉一个椭圆弧曲线路径要比描述一个贝塞尔曲线路径更简单。说到底，path元素支持Arcto命令。圆弧的中心由别的变量急速那出。一个arcto的声明相对而言有点复Visual Studio:`"A rx,ry xAxisRotate LargeArcFlag,SweepFlag x,y"`。解构它，rx和ry分别是x和y方向的半径，而LargeArcFlag的值要么是0要么是1，用来确定是要画小弧(0)还是画大弧(1)。SweepFlag也要么是0要么是1，用来确定弧是顺时针方向(1)还是逆时针方向(0)。x和y是目的地的坐标。虽然xAxisRotate支持改变x轴相对于当前引用框架的方向但是在Gecko 7中，这个参数看起来没什么效果。
+
+#### ClosePath
+ClosePath命令将在当前路径，从当前点到第一个点简单画一条直线。他是最简单的命令，而且不带有任何参数。它沿着开始的点的最短的线性路径，如果别的路径落在这路上，将有可能路径相交。句法是`"Z"`或`"z"`，两种写法作用一样。
+
+#### 总结
+
+全是概念玩个毛，太抽象，看完云里雾里，需要实际的图形参考，后面再慢慢研究吧。ssssssshit!!!
