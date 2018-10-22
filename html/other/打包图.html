@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>布局 打包图</title>
+    <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+</head>
+<body>
+<script>
+    const data = {
+        "name": "中国",
+        "children": [
+            {
+                "name": "浙江",
+                "children": [
+                    {"name": "杭州", "size": 3938},
+                    {"name": "宁波", "size": 3812},
+                    {"name": "温州", "size": 5321},
+                    {"name": "绍兴", "size": 6342}
+                ],
+                "size": 9823
+            },
+            {
+                "name": "广西",
+                "children": [
+                    {"name": "桂林", "size": 3812},
+                    {"name": "南宁", "size": 6523},
+                    {"name": "柳州", "size": 4812},
+                    {"name": "防城港", "size": 3522}
+                ],
+                "size": 13812
+            }
+        ]
+    };
+    const width = 932, height = width;
+
+    // 布局
+    let pack = data => d3.pack()
+        .size([width - 2, height])
+        .padding(3)(d3.hierarchy(data)
+            .sum(d => d.size)
+            .sort((a, b) => b.value - a.value));
+
+    const root = pack(data);
+
+    console.log(root);
+
+    let format = d3.format(',d');
+
+    let color = d3.scaleSequential(d3.interpolateMagma).domain([8, 0]);
+
+    // const DOM = d3.select('body');
+    const svg = d3.select('body').append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .style('font', '10px sans-serif')
+        .style('width', '100%')
+        .style('height', 'auto')
+        .attr('text-anchor', 'middle');
+
+    const node = svg.selectAll('g')
+        .data(root.descendants())
+        .enter().append('g')
+        .attr('transform', d => `tranlate(${d.x + 1}, ${d.y + 1})`);
+
+    node.append('circle')
+        .attr('r', d => d.r)
+        .attr('fill', d => color(d.height));
+
+    const leaf = node.filter(d => !d.children);
+
+    leaf.select('circle')
+        .attr('id', d => d.r)
+        .attr('stroke', '#000');
+
+    leaf.append('clipPath')
+        .attr('stroke', '#000');
+
+    leaf.append('text')
+        .selectAll('tspan')
+        .data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g))
+        .enter().append('tspan')
+        .attr('x', 0)
+        .attr('y', (d, i, nodes) => `${i - nodes.length / 2 + 0.8}em`)
+        .text(d => d);
+
+    node.append('title')
+        .text(d => `${d.ancestors().map(d => d,data.name).reverse().join('/')}\n${format(d.value)}`)
+</script>
+</body>
+</html>
