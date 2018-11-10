@@ -17,8 +17,7 @@
                     {"name": "宁波", "size": 3812},
                     {"name": "温州", "size": 5321},
                     {"name": "绍兴", "size": 6342}
-                ],
-                "size": 9823
+                ]
             },
             {
                 "name": "广西",
@@ -27,8 +26,7 @@
                     {"name": "南宁", "size": 6523},
                     {"name": "柳州", "size": 4812},
                     {"name": "防城港", "size": 3522}
-                ],
-                "size": 13812
+                ]
             }
         ]
     };
@@ -37,8 +35,8 @@
     // 布局
     let pack = data => d3.pack()
         .size([width - 2, height])
-        .padding(3)(d3.hierarchy(data)
-            .sum(d => d.size)
+        .padding(3)(d3.hierarchy(data)  // 从给定层次结构树据构造一个根节点并未各个根节点指定深度等属性
+            .sum(d => d.size)   // 评估和汇总定量值
             .sort((a, b) => b.value - a.value));
 
     const root = pack(data);
@@ -61,7 +59,7 @@
     const node = svg.selectAll('g')
         .data(root.descendants())
         .enter().append('g')
-        .attr('transform', d => `tranlate(${d.x + 1}, ${d.y + 1})`);
+        .attr('transform', d => `translate(${d.x + 1}, ${d.y + 1})`);
 
     node.append('circle')
         .attr('r', d => d.r)
@@ -85,7 +83,7 @@
         .text(d => d);
 
     node.append('title')
-        .text(d => `${d.ancestors().map(d => d,data.name).reverse().join('/')}\n${format(d.value)}`)
+        .text(d => `${d.ancestors().map(d => d,data.name).reverse().join('/')}\n${format(d.value)}`);
 </script>
 </body>
 </html>
