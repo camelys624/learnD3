@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <title>布局 分区图</title>
     <script type="text/javascript" src="../../node_modules/d3/dist/d3.js"></script>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.7.0/d3.min.js"></script>-->
 </head>
 <body>
 <script type="text/javascript">
-    const width = 1600, height = 900;
+    // d3 = require("d3@5")
+    const width = 632;
     const radius = width / 2;
     const arc = d3.arc()
         .startAngle(d => d.x0)
@@ -30,9 +32,9 @@
 
         const color = d3.scaleOrdinal().range(d3.quantize(d3.interpolateRainbow, data.children.length + 1));
 
-        const svg = d3.select('body').append('svg')
+        let svg = d3.select('body').append('svg')
             .attr('width', width)
-            .attr('height', height)
+            .attr('height', width)
             .style('width', '100%')
             .style('height', 'auto')
             .style('padding', '10px')
@@ -41,46 +43,42 @@
 
         const g = svg.append('g');
 
-        g.append('g')
-            .attr('fill-opacity', 0.6)
-            .selectAll('path')
+        g.append("g")
+            .attr("fill-opacity", 0.6)
+            .selectAll("path")
             .data(root.descendants().filter(d => d.depth))
-            .enter().append('path')
-            .attr('fill', d => {
-                while (d.depth > 1){
-                    d = d.parent;
-                    return color(d.data.name);
-                }
+            .enter().append("path")
+            .attr("fill", d => {
+                while (d.depth > 1) d = d.parent;
+                return color(d.data.name);
             })
-            .attr('d', arc)
-            .append('title')
-            .text(d => `
-            ${d.ancestors().map(d => d.data.name).reverse().join('/')}\n
-            ${format(d.value)}`);
+            .attr("d", arc)
+            .append("title")
+            .text(d => `${d.ancestors().map(d => d.data.name).reverse().join("/")}\n${format(d.value)}`);
 
-        g.append('g')
-            .attr('pointer-events', 'none')
-            .attr('text-anchor', 'middle')
-            .selectAll('text')
-            .data(root.descendants()
-                .filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
-            .enter().append('text')
-            .attr('transform', function (d) {
-                console.log(d);
+        g.append("g")
+            .attr("pointer-events", "none")
+            .attr("text-anchor", "middle")
+            .selectAll("text")
+            .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
+            .enter().append("text")
+            .attr("transform", function (d) {
                 const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
                 const y = (d.y0 + d.y1) / 2;
                 return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
             })
-            .attr('dy', '0.35em')
+            .attr("dy", "0.35em")
             .text(d => d.data.name);
-        document.body.appendChild(svg.node());
+
         const box = g.node().getBBox();
-        console.log(box)
-        // svg.remove()
-        //     .attr('width', box.width)
-        //     .attr('height', box.height)
-        //     .attr('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
-    })
+        // 先移除元素
+        svg.remove()
+            .attr("width", box.width)
+            .attr("height", box.height / 2)
+            .attr("viewBox", `${box.x } ${box.y} ${box.width} ${box.height}`);
+
+        document.body.appendChild(svg.node());  // 后添加svg元素
+    });
 </script>
 </body>
 </html>
